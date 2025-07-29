@@ -12,6 +12,8 @@ import User from "./model/User.js";
 import productRoutes from "./routes/productRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import searchRoutes from './routes/searchRoutes.js';
+import commentRoutes from "./routes/commentRoutes.js";
+
 
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -32,6 +34,8 @@ app.use('/images', express.static(path.join(process.cwd(), '/uploads')));
 app.use('/api', searchRoutes);
 app.use("/products", productRoutes);
 app.use("/users", userRoutes);
+app.use("/comments", commentRoutes);
+
 
 // MongoDB connection
 mongoose

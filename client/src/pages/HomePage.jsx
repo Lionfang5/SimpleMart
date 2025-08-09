@@ -306,7 +306,7 @@ const HomePage = () => {
                       Expires: {new Date(product.expirationDate).toLocaleDateString()}
                     </p>
                     <p className="text-2xl font-bold text-blue-600">
-                      ${product.price}
+                      Rs.{product.price}
                     </p>
                   </div>
                   <button

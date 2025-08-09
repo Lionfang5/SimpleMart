@@ -132,7 +132,7 @@ const ProductDetail = () => {
         {/* Product Info */}
         <div className="w-full md:w-1/2">
           <h1 className="text-3xl font-bold mb-4">{product.name}</h1>
-          <p className="text-lg mb-2"><span className="font-semibold">Price:</span> ${product.price}</p>
+          <p className="text-lg mb-2"><span className="font-semibold">Price:</span> Rs.{product.price}</p>
           <p className="text-lg mb-2"><span className="font-semibold">Category:</span> {product.category}</p>
           <p className="text-lg mb-2"><span className="font-semibold">Expiration Date:</span> {new Date(product.expirationDate).toLocaleDateString()}</p>
           <p className="text-lg mb-2"><span className="font-semibold">Rating:</span> {product.rating} / 5</p>

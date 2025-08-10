@@ -8,12 +8,13 @@ import path from "path";
 
 import Product from "./model/Product.js";
 import User from "./model/User.js";
+import Order from "./model/Order.js"; // NEW: Import Order model
 
 import productRoutes from "./routes/productRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
+import orderRoutes from "./routes/orderRoutes.js"; // NEW: Import order routes
 import searchRoutes from './routes/searchRoutes.js';
 import commentRoutes from "./routes/commentRoutes.js";
-
 
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -34,8 +35,8 @@ app.use('/images', express.static(path.join(process.cwd(), '/uploads')));
 app.use('/api', searchRoutes);
 app.use("/products", productRoutes);
 app.use("/users", userRoutes);
+app.use("/orders", orderRoutes); // NEW: Add order routes
 app.use("/comments", commentRoutes);
-
 
 // MongoDB connection
 mongoose

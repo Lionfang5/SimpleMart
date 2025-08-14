@@ -1,27 +1,51 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CartContext } from '../contexts/CartContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { authFetch } from '../utils/authFetch';
 
 const NavBar = ({ toggleSideBar }) => {
   const [showProfile, setShowProfile] = useState(false);
+  const [userRole, setUserRole] = useState([]);
   const { cartCount, setCartItems, setCartCount } = useContext(CartContext);
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const isLoggedIn = Boolean(localStorage.getItem('accessToken'));
 
+  // Fetch user role when component mounts
+  useEffect(() => {
+    if (isLoggedIn) {
+      fetchUserRole();
+    }
+  }, [isLoggedIn]);
+
+  const fetchUserRole = async () => {
+    try {
+      const response = await authFetch('http://localhost:5000/user-data');
+      if (response.ok) {
+        const userData = await response.json();
+        setUserRole(userData.role || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch user role:', err);
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     setCartItems([]);
     setCartCount(0);
+    setUserRole([]);
     navigate('/login');
   };
 
   const toggleProfile = () => {
     setShowProfile(prev => !prev);
   };
+
+  const isAdmin = userRole.includes('admin');
 
   return (
    <nav className={`sticky top-0 z-50 shadow-lg border-b flex items-center justify-between px-6 py-3 ${
@@ -38,32 +62,68 @@ const NavBar = ({ toggleSideBar }) => {
           aria-label="Open sidebar"
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12.005 11.995v.01m0-4.01v.01m0 7.99v.01"/>
+            <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12h18m-9-9v18"/>
           </svg>
         </button>
-        <span className={`text-xl font-bold ${
+        <Link to="/" className={`text-xl font-bold ${
           isDark ? 'text-blue-400' : 'text-blue-600'
-        }`}>MART</span>
+        }`}>
+          MART
+        </Link>
         <Link to="/" className={`transition-colors ${
           isDark ? 'text-gray-300 hover:text-blue-400' : 'text-gray-700 hover:text-blue-600'
         }`}>
           Home
         </Link>
       </div>
+
       <div className="flex items-center gap-6">
         {isLoggedIn ? (
           <>
+            {/* Dashboard Links */}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors ${
+                  isDark 
+                    ? 'text-gray-300 hover:text-red-400 hover:bg-gray-800' 
+                    : 'text-gray-700 hover:text-red-600 hover:bg-red-50'
+                }`}
+                title="Admin Dashboard"
+              >
+                <span>🛡️</span>
+                <span className="hidden md:inline">Admin</span>
+              </Link>
+            )}
+            
+            <Link
+              to="/dashboard"
+              className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors ${
+                isDark 
+                  ? 'text-gray-300 hover:text-green-400 hover:bg-gray-800' 
+                  : 'text-gray-700 hover:text-green-600 hover:bg-green-50'
+              }`}
+              title="My Dashboard"
+            >
+              <span>📊</span>
+              <span className="hidden md:inline">Dashboard</span>
+            </Link>
+
             <Link
               to="/Cart"
-              className={`relative transition-colors ${
+              className={`relative flex items-center space-x-1 transition-colors ${
                 isDark ? 'text-gray-300 hover:text-blue-400' : 'text-gray-700 hover:text-blue-600'
               }`}
             >
-              Cart
-              <span className="ml-1 inline-block bg-blue-500 text-white text-xs rounded-full px-2 py-0.5">
-                {cartCount}
-              </span>
+              <span>🛒</span>
+              <span className="hidden md:inline">Cart</span>
+              {cartCount > 0 && (
+                <span className="absolute -top-2 -right-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                  {cartCount}
+                </span>
+              )}
             </Link>
+
             {/* Theme Toggle Button */}
             <button
               onClick={toggleTheme}
@@ -76,50 +136,107 @@ const NavBar = ({ toggleSideBar }) => {
             >
               {isDark ? '☀️' : '🌙'}
             </button>
+
             <div className="relative">
               <button
                 onClick={toggleProfile}
-                className={`px-3 py-1 rounded transition-colors ${
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
                   isDark 
                     ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' 
                     : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
                 }`}
               >
-                Profile
+                <span>👤</span>
+                <span className="hidden md:inline">Profile</span>
+                <svg className={`w-4 h-4 transition-transform ${showProfile ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
               </button>
+
               {showProfile && (
-                <div className={`absolute right-0 mt-2 w-48 border rounded shadow-xl z-10 ${
+                <div className={`absolute right-0 mt-2 w-56 border rounded-lg shadow-xl z-10 ${
                   isDark 
                     ? 'bg-gray-800 border-gray-600' 
                     : 'bg-white border-gray-200'
                 }`}>
-                  <div className="flex flex-col p-2">
-                    <Link
-                      to="/Account"
-                      className={`px-4 py-2 rounded transition-colors ${
-                        isDark 
-                          ? 'text-gray-200 hover:bg-gray-700' 
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      Your account
-                    </Link>
-                    <Link
-                      to="/Settings"
-                      className={`px-4 py-2 rounded transition-colors ${
-                        isDark 
-                          ? 'text-gray-200 hover:bg-gray-700' 
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      Settings
-                    </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="mt-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition-colors"
-                    >
-                      Log out
-                    </button>
+                  <div className="p-2">
+                    {/* User Info Header */}
+                    <div className={`px-4 py-3 border-b ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                      <p className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                        Signed in as
+                      </p>
+                      <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {userRole.join(', ') || 'User'}
+                      </p>
+                    </div>
+
+                    {/* Navigation Links */}
+                    <div className="py-2">
+                      <Link
+                        to="/dashboard"
+                        onClick={() => setShowProfile(false)}
+                        className={`flex items-center px-4 py-2 text-sm rounded transition-colors ${
+                          isDark 
+                            ? 'text-gray-200 hover:bg-gray-700' 
+                            : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        <span className="mr-3">📊</span>
+                        My Dashboard
+                      </Link>
+
+                      <Link
+                        to="/Account"
+                        onClick={() => setShowProfile(false)}
+                        className={`flex items-center px-4 py-2 text-sm rounded transition-colors ${
+                          isDark 
+                            ? 'text-gray-200 hover:bg-gray-700' 
+                            : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        <span className="mr-3">👤</span>
+                        Your account
+                      </Link>
+
+                      <Link
+                        to="/Settings"
+                        onClick={() => setShowProfile(false)}
+                        className={`flex items-center px-4 py-2 text-sm rounded transition-colors ${
+                          isDark 
+                            ? 'text-gray-200 hover:bg-gray-700' 
+                            : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        <span className="mr-3">⚙️</span>
+                        Settings
+                      </Link>
+
+                      {isAdmin && (
+                        <Link
+                          to="/admin"
+                          onClick={() => setShowProfile(false)}
+                          className={`flex items-center px-4 py-2 text-sm rounded transition-colors ${
+                            isDark 
+                              ? 'text-red-400 hover:bg-gray-700' 
+                              : 'text-red-600 hover:bg-red-50'
+                          }`}
+                        >
+                          <span className="mr-3">🛡️</span>
+                          Admin Dashboard
+                        </Link>
+                      )}
+                    </div>
+
+                    {/* Logout */}
+                    <div className={`pt-2 border-t ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
+                      >
+                        <span className="mr-3">🚪</span>
+                        Log out
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -138,13 +255,17 @@ const NavBar = ({ toggleSideBar }) => {
             >
               {isDark ? '☀️' : '🌙'}
             </button>
+            
             <Link
               to="/login"
-              className={`transition-colors ${
-                isDark ? 'text-gray-300 hover:text-blue-400' : 'text-gray-700 hover:text-blue-600'
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                isDark 
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
               }`}
             >
-              Sign In
+              <span>🔑</span>
+              <span>Sign In</span>
             </Link>
           </>
         )}

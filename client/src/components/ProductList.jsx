@@ -78,7 +78,7 @@ const ProductList = ({ category }) => {
                 {product.name}
               </h2>
 
-              <p className="text-lg font-bold text-blue-600 mb-3">${product.price.toFixed(2)}</p>
+              <p className="text-lg font-bold text-blue-600 mb-3">Rs.{product.price.toFixed(2)}</p>
 
               <p
                 className={`mb-3 text-sm ${

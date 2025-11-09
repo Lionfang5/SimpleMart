@@ -9,7 +9,7 @@ import Level2 from './pages/Level2.jsx';
 import Level3 from './pages/Level3.jsx';
 import Level4 from './pages/Level4.jsx';
 import Level5 from './pages/Level5.jsx';
-import Admin from './admin/Admin.jsx';
+import Admin from './admin/admin.jsx';
 import Settings from './pages/Settings.jsx';
 import AccountPage from './pages/AccountPage.jsx';
 import Cart from './pages/Cart.jsx';
@@ -20,6 +20,8 @@ import LoginPage from './pages/LoginPage.jsx';
 import CreateAccountPage from './pages/CreateAccount.jsx';
 import AllProducts from './pages/AllProducts.jsx';
 import ProductDetail from './components/ProductDetail.jsx';
+import OrderSuccessPage from './pages/OrderSuccessPage.jsx'
+import UserDashboard from './pages/UserDashboard.jsx'
 
 function App() {
   const [showSideBar, setShowSideBar] = useState(false);
@@ -49,6 +51,9 @@ function App() {
           <Route path="/admin" element={<Admin />} />
           <Route path="/all-products" element={<AllProducts />} />
           <Route path="/products/:id" element={<ProductDetail />} /> 
+          <Route path="/dashboard" element={<UserDashboard />} />
+<Route path="/checkout" element={<CheckoutPage />} />
+<Route path="/order-success" element={<OrderSuccessPage />} />
         </Routes>
       </CartProvider>
     </ThemeProvider>

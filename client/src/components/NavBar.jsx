@@ -7,16 +7,18 @@ import { authFetch } from '../utils/authFetch';
 const NavBar = ({ toggleSideBar }) => {
   const [showProfile, setShowProfile] = useState(false);
   const [userRole, setUserRole] = useState([]);
+  const [wishlistCount, setWishlistCount] = useState(0);
   const { cartCount, setCartItems, setCartCount } = useContext(CartContext);
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const isLoggedIn = Boolean(localStorage.getItem('accessToken'));
 
-  // Fetch user role when component mounts
+  // Fetch user role and wishlist count when component mounts
   useEffect(() => {
     if (isLoggedIn) {
       fetchUserRole();
+      fetchWishlistCount();
     }
   }, [isLoggedIn]);
 
@@ -32,11 +34,25 @@ const NavBar = ({ toggleSideBar }) => {
     }
   };
 
+  const fetchWishlistCount = async () => {
+    try {
+      const response = await authFetch('http://localhost:5000/wishlist/count');
+      if (response.ok) {
+        const data = await response.json();
+        setWishlistCount(data.count || 0);
+      }
+    } catch (err) {
+      console.error('Failed to fetch wishlist count:', err);
+      setWishlistCount(0);
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     setCartItems([]);
     setCartCount(0);
+    setWishlistCount(0);
     setUserRole([]);
     navigate('/login');
   };
@@ -107,6 +123,25 @@ const NavBar = ({ toggleSideBar }) => {
             >
               <span>📊</span>
               <span className="hidden md:inline">Dashboard</span>
+            </Link>
+
+            {/* Wishlist Link */}
+            <Link
+              to="/wishlist"
+              className={`relative flex items-center space-x-1 transition-colors ${
+                isDark ? 'text-gray-300 hover:text-red-400' : 'text-gray-700 hover:text-red-600'
+              }`}
+              title="My Wishlist"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+              <span className="hidden md:inline">Wishlist</span>
+              {wishlistCount > 0 && (
+                <span className="absolute -top-2 -right-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                  {wishlistCount}
+                </span>
+              )}
             </Link>
 
             <Link
@@ -183,6 +218,24 @@ const NavBar = ({ toggleSideBar }) => {
                       >
                         <span className="mr-3">📊</span>
                         My Dashboard
+                      </Link>
+
+                      <Link
+                        to="/wishlist"
+                        onClick={() => setShowProfile(false)}
+                        className={`flex items-center px-4 py-2 text-sm rounded transition-colors ${
+                          isDark 
+                            ? 'text-gray-200 hover:bg-gray-700' 
+                            : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        <span className="mr-3">❤️</span>
+                        My Wishlist
+                        {wishlistCount > 0 && (
+                          <span className="ml-auto bg-red-600 text-white text-xs rounded-full px-2 py-1">
+                            {wishlistCount}
+                          </span>
+                        )}
                       </Link>
 
                       <Link

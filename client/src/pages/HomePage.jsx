@@ -5,10 +5,12 @@ import { useContext } from "react";
 import { CartContext } from '../contexts/CartContext';
 import { authFetch } from '../utils/authFetch';
 import { useTheme } from '../contexts/ThemeContext';
+import RecommendationsSection from '../components/RecommendationsSection';
 
 const HomePage = () => {
   const [search, setSearch] = useState('');
   const [filteredProducts, setFilteredProducts] = useState([]);
+  const [user, setUser] = useState(null);
   const { data: productData, error } = useFetch('http://localhost:5000/get-data');
   const { fetchCartItems } = useContext(CartContext);
   const { isDark } = useTheme();
@@ -20,6 +22,22 @@ const HomePage = () => {
     { name: "Electronics", path: "/level4", icon: "📱" },
     { name: "Household", path: "/level5", icon: "🏠" }
   ];
+
+  // Check if user is logged in
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      authFetch("http://localhost:5000/user-data")
+        .then(res => {
+          if (res.ok) {
+            return res.json();
+          }
+          throw new Error("User not logged in");
+        })
+        .then(data => setUser(data))
+        .catch(() => setUser(null));
+    }
+  }, []);
 
   const addToCartHandle = (product) => {
     authFetch('http://localhost:5000/add_to_cart', {
@@ -90,7 +108,7 @@ const HomePage = () => {
               Welcome to MART
             </h1>
             <p className="text-xl md:text-2xl mb-8 opacity-90">
-              Your one-stop shop for everything you need
+              Your AI-powered shopping experience
             </p>
             
             {/* Search Bar */}
@@ -158,7 +176,7 @@ const HomePage = () => {
                             Expires: {new Date(product.expirationDate).toLocaleDateString()}
                           </p>
                           <p className="text-2xl font-bold text-blue-600">
-                            ${product.price}
+                            Rs.{product.price}
                           </p>
                         </div>
                       </Link>
@@ -208,7 +226,7 @@ const HomePage = () => {
                             <p className={`text-sm mb-3 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
                               Expires: {new Date(product.expirationDate).toLocaleDateString()}
                             </p>
-                            <p className="text-2xl font-bold text-blue-600">${product.price}</p>
+                            <p className="text-2xl font-bold text-blue-600">Rs.{product.price}</p>
                           </div>
                         </Link>
                       ))}
@@ -224,6 +242,13 @@ const HomePage = () => {
       {/* If no search, show the normal homepage sections */}
       {!search && (
         <>
+          {/* AI-Powered Recommendations Section */}
+          {user && (
+            <div className={`py-8 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+              <RecommendationsSection userId={user._id} />
+            </div>
+          )}
+
           {/* Category Navigation */}
           <div className="max-w-6xl mx-auto px-4 py-12">
             <h2 className={`text-3xl font-bold text-center mb-8 ${
@@ -320,6 +345,36 @@ const HomePage = () => {
                   </button>
                 </Link>
               ))}
+            </div>
+          </div>
+
+          {/* AI Features Banner */}
+          <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-12">
+            <div className="max-w-6xl mx-auto px-4 text-center">
+              <div className="text-4xl mb-4">🤖</div>
+              <h2 className="text-3xl font-bold mb-4">
+                Powered by Artificial Intelligence
+              </h2>
+              <p className="text-xl mb-6 opacity-90">
+                Our advanced Apriori algorithm analyzes customer purchase patterns to provide you with personalized recommendations
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+                <div className="text-center">
+                  <div className="text-2xl mb-2">🎯</div>
+                  <h3 className="font-semibold mb-2">Smart Recommendations</h3>
+                  <p className="text-sm opacity-80">Get product suggestions based on your cart and purchase history</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl mb-2">🛍️</div>
+                  <h3 className="font-semibold mb-2">Frequently Bought Together</h3>
+                  <p className="text-sm opacity-80">Discover items that other customers purchase together</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl mb-2">📊</div>
+                  <h3 className="font-semibold mb-2">Market Basket Analysis</h3>
+                  <p className="text-sm opacity-80">Advanced algorithms analyze shopping patterns for better suggestions</p>
+                </div>
+              </div>
             </div>
           </div>
         </>

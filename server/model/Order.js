@@ -29,10 +29,28 @@ const orderSchema = new mongoose.Schema({
     zipCode: { type: String, required: true }
   },
   paymentInfo: {
-    cardNumber: String, // In real app, this should be encrypted/tokenized
-    cardName: String,
-    expiryDate: String,
-    cvv: String
+    method: { 
+      type: String, 
+      enum: ['card', 'cod'], 
+      default: 'card',
+      required: true 
+    },
+    transactionId: { type: String, required: true },
+    processingFee: { type: Number, default: 0 },
+    // Card-specific fields (only required for card payments)
+    cardNumber: { 
+      type: String,
+      required: function() { return this.method === 'card'; }
+    },
+    cardName: { 
+      type: String,
+      required: function() { return this.method === 'card'; }
+    },
+    expiryDate: { 
+      type: String,
+      required: function() { return this.method === 'card'; }
+    },
+    cvv: String // Not stored for security, but keeping for schema completeness
   },
   orderDate: { type: Date, default: Date.now },
   deliveredDate: Date

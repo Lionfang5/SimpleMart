@@ -134,6 +134,26 @@ const OrderManagement = ({ orders: initialOrders, setOrders: setParentOrders }) 
     }
   };
 
+  const getPaymentMethodDisplay = (paymentInfo) => {
+    if (!paymentInfo) return { text: 'N/A', icon: '❓', color: 'text-gray-500' };
+    
+    const method = paymentInfo.method || 'card';
+    
+    if (method === 'cod') {
+      return { 
+        text: 'Cash on Delivery', 
+        icon: '💰', 
+        color: 'text-green-600 dark:text-green-400' 
+      };
+    } else {
+      return { 
+        text: `Card (*${paymentInfo.cardNumber?.slice(-4) || 'N/A'})`, 
+        icon: '💳', 
+        color: 'text-blue-600 dark:text-blue-400' 
+      };
+    }
+  };
+
   if (loading) {
     return (
       <div className={`p-6 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
@@ -209,6 +229,9 @@ const OrderManagement = ({ orders: initialOrders, setOrders: setParentOrders }) 
                     Items
                   </th>
                   <th className={`text-left p-4 font-semibold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                    Payment Method
+                  </th>
+                  <th className={`text-left p-4 font-semibold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
                     Total
                   </th>
                   <th className={`text-left p-4 font-semibold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
@@ -223,90 +246,114 @@ const OrderManagement = ({ orders: initialOrders, setOrders: setParentOrders }) 
                 </tr>
               </thead>
               <tbody>
-                {orders.map((order, index) => (
-                  <tr key={order._id || index} className={`border-b ${
-                    isDark ? 'border-gray-600 hover:bg-gray-700' : 'border-gray-200 hover:bg-gray-50'
-                  }`}>
-                    <td className="p-4">
-                      <span className={`text-sm font-mono ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                        #{order._id ? order._id.slice(-8).toUpperCase() : 'N/A'}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <div className="space-y-1">
-                        <p className={`font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
-                          {order.shippingAddress?.firstName || 'N/A'} {order.shippingAddress?.lastName || ''}
-                        </p>
-                        <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                          📧 {order.shippingAddress?.email || 'N/A'}
-                        </p>
-                        <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                          📱 {order.shippingAddress?.phone || 'N/A'}
-                        </p>
-                        <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
-                          📍 {order.shippingAddress?.city || 'N/A'}, {order.shippingAddress?.state || 'N/A'}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <div>
-                        <p className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                          {order.items?.length || 0} item{(order.items?.length || 0) !== 1 ? 's' : ''}
-                        </p>
-                        {order.items && order.items.length > 0 && (
-                          <button
-                            onClick={() => viewOrderDetails(order)}
-                            className="text-xs text-blue-600 hover:text-blue-700 underline"
-                          >
-                            View Details
-                          </button>
+                {orders.map((order, index) => {
+                  const paymentDisplay = getPaymentMethodDisplay(order.paymentInfo);
+                  
+                  return (
+                    <tr key={order._id || index} className={`border-b ${
+                      isDark ? 'border-gray-600 hover:bg-gray-700' : 'border-gray-200 hover:bg-gray-50'
+                    }`}>
+                      <td className="p-4">
+                        <span className={`text-sm font-mono ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                          #{order._id ? order._id.slice(-8).toUpperCase() : 'N/A'}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <div className="space-y-1">
+                          <p className={`font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                            {order.shippingAddress?.firstName || 'N/A'} {order.shippingAddress?.lastName || ''}
+                          </p>
+                          <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                            📧 {order.shippingAddress?.email || 'N/A'}
+                          </p>
+                          <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                            📱 {order.shippingAddress?.phone || 'N/A'}
+                          </p>
+                          <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                            📍 {order.shippingAddress?.city || 'N/A'}, {order.shippingAddress?.state || 'N/A'}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <div>
+                          <p className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                            {order.items?.length || 0} item{(order.items?.length || 0) !== 1 ? 's' : ''}
+                          </p>
+                          {order.items && order.items.length > 0 && (
+                            <button
+                              onClick={() => viewOrderDetails(order)}
+                              className="text-xs text-blue-600 hover:text-blue-700 underline"
+                            >
+                              View Details
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex items-center space-x-1">
+                          <span className="text-lg">{paymentDisplay.icon}</span>
+                          <span className={`text-sm font-medium ${paymentDisplay.color}`}>
+                            {paymentDisplay.text}
+                          </span>
+                        </div>
+                        {order.paymentInfo?.transactionId && (
+                          <p className={`text-xs font-mono mt-1 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                            ID: {order.paymentInfo.transactionId.slice(-8)}
+                          </p>
                         )}
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <span className={`font-semibold text-lg ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
-                        ${(order.totalAmount || 0).toFixed(2)}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.status)}`}>
-                        {order.status || 'pending'}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                        {order.orderDate ? new Date(order.orderDate).toLocaleDateString() : 'N/A'}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex space-x-2">
-                        <select
-                          value={order.status || 'pending'}
-                          onChange={(e) => updateOrderStatus(order._id, e.target.value)}
-                          className={`text-xs px-2 py-1 border rounded ${
-                            isDark 
-                              ? 'bg-gray-700 border-gray-600 text-gray-200' 
-                              : 'bg-white border-gray-300 text-gray-800'
-                          }`}
-                        >
-                          <option value="pending">Pending</option>
-                          <option value="processing">Processing</option>
-                          <option value="shipped">Shipped</option>
-                          <option value="delivered">Delivered</option>
-                          <option value="cancelled">Cancelled</option>
-                        </select>
-                        
-                        <button
-                          onClick={() => deleteOrder(order._id)}
-                          className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 text-xs rounded transition-colors"
-                          title="Delete Order"
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="p-4">
+                        <div>
+                          <span className={`font-semibold text-lg ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                            Rs.{(order.totalAmount || 0).toFixed(2)}
+                          </span>
+                          {order.paymentInfo?.processingFee > 0 && (
+                            <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                              +Rs.{order.paymentInfo.processingFee.toFixed(2)} fee
+                            </p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.status)}`}>
+                          {order.status || 'pending'}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                          {order.orderDate ? new Date(order.orderDate).toLocaleDateString() : 'N/A'}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex space-x-2">
+                          <select
+                            value={order.status || 'pending'}
+                            onChange={(e) => updateOrderStatus(order._id, e.target.value)}
+                            className={`text-xs px-2 py-1 border rounded ${
+                              isDark 
+                                ? 'bg-gray-700 border-gray-600 text-gray-200' 
+                                : 'bg-white border-gray-300 text-gray-800'
+                            }`}
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="processing">Processing</option>
+                            <option value="shipped">Shipped</option>
+                            <option value="delivered">Delivered</option>
+                            <option value="cancelled">Cancelled</option>
+                          </select>
+                          
+                          <button
+                            onClick={() => deleteOrder(order._id)}
+                            className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 text-xs rounded transition-colors"
+                            title="Delete Order"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -330,6 +377,28 @@ const OrderManagement = ({ orders: initialOrders, setOrders: setParentOrders }) 
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Payment Method Summary */}
+        {orders.length > 0 && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
+              <p className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                💳 Card Payments
+              </p>
+              <p className={`text-2xl font-bold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                {orders.filter(order => order.paymentInfo?.method === 'card' || !order.paymentInfo?.method).length}
+              </p>
+            </div>
+            <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
+              <p className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                💰 Cash on Delivery
+              </p>
+              <p className={`text-2xl font-bold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                {orders.filter(order => order.paymentInfo?.method === 'cod').length}
+              </p>
+            </div>
           </div>
         )}
       </div>
@@ -397,11 +466,11 @@ const OrderManagement = ({ orders: initialOrders, setOrders: setParentOrders }) 
                           {item.name}
                         </p>
                         <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                          Qty: {item.quantity} × ${item.price}
+                          Qty: {item.quantity} × Rs.{item.price}
                         </p>
                       </div>
                       <p className={`font-semibold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
-                        ${(item.price * item.quantity).toFixed(2)}
+                        Rs.{(item.price * item.quantity).toFixed(2)}
                       </p>
                     </div>
                   ))}
@@ -410,7 +479,7 @@ const OrderManagement = ({ orders: initialOrders, setOrders: setParentOrders }) 
                   isDark ? 'border-gray-600' : 'border-gray-200'
                 }`}>
                   <p className={`text-lg font-bold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
-                    Total: ${selectedOrder.totalAmount.toFixed(2)}
+                    Total: Rs.{selectedOrder.totalAmount.toFixed(2)}
                   </p>
                   <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(selectedOrder.status)}`}>
                     {selectedOrder.status}
@@ -418,18 +487,43 @@ const OrderManagement = ({ orders: initialOrders, setOrders: setParentOrders }) 
                 </div>
               </div>
 
-              {/* Payment Information (if available) */}
+              {/* Payment Information */}
               {selectedOrder.paymentInfo && (
                 <div className={`mb-6 p-4 rounded-lg border ${isDark ? 'border-gray-600 bg-gray-700' : 'border-gray-200 bg-gray-50'}`}>
                   <h4 className={`font-semibold mb-3 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
                     Payment Information
                   </h4>
-                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                    Card ending in: ****{selectedOrder.paymentInfo.cardNumber?.slice(-4) || 'N/A'}
-                  </p>
-                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                    Cardholder: {selectedOrder.paymentInfo.cardName || 'N/A'}
-                  </p>
+                  {(() => {
+                    const paymentDisplay = getPaymentMethodDisplay(selectedOrder.paymentInfo);
+                    return (
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-lg">{paymentDisplay.icon}</span>
+                          <span className={`font-medium ${paymentDisplay.color}`}>
+                            {paymentDisplay.text}
+                          </span>
+                        </div>
+                        
+                        {selectedOrder.paymentInfo.transactionId && (
+                          <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                            Transaction ID: {selectedOrder.paymentInfo.transactionId}
+                          </p>
+                        )}
+                        
+                        {selectedOrder.paymentInfo.processingFee > 0 && (
+                          <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                            Processing Fee: Rs.{selectedOrder.paymentInfo.processingFee.toFixed(2)}
+                          </p>
+                        )}
+
+                        {selectedOrder.paymentInfo.method === 'card' && selectedOrder.paymentInfo.cardName && (
+                          <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                            Cardholder: {selectedOrder.paymentInfo.cardName}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 

@@ -1,4 +1,4 @@
-  import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
   import { authFetch } from "../utils/authFetch";
 
   const ProductForm = ({ products, setProducts, setError }) => {
@@ -26,6 +26,7 @@
       rating: "",
       reviewCount: "",
       isActive: true,
+      image: "", // ✅ Added image field
       tags: [],
     });
 
@@ -138,6 +139,7 @@
         rating: product.rating.toString(),
         reviewCount: product.reviewCount.toString(),
         isActive: product.isActive,
+        image: product.image || "", // ✅ Include image field
         tags: product.tags || [],
       });
       setValidationErrors({});
@@ -158,6 +160,7 @@
           rating: parseFloat(editedProduct.rating),
           reviewCount: parseInt(editedProduct.reviewCount),
           isActive: editedProduct.isActive,
+          image: editedProduct.image, // ✅ Include image field
           tags: editedProduct.tags,
         };
 
@@ -504,8 +507,18 @@
                     </td>
 
                     <td className="p-2 border border-gray-600">
-                      {/* Image filename is not editable in the list, but can be added here if needed */}
-                      <em>{prod.image}</em>
+                      {/* ✅ Now image filename is editable */}
+                      <input
+                        type="text"
+                        value={editedProduct.image}
+                        onChange={(e) =>
+                          setEditedProduct({ ...editedProduct, image: e.target.value })
+                        }
+                        className="w-full p-1 bg-gray-800 text-white border border-gray-600 rounded"
+                      />
+                      {validationErrors.image && (
+                        <p className="text-red-400 text-xs">{validationErrors.image}</p>
+                      )}
                     </td>
 
                     <td className="p-2 border border-gray-600 text-center">
@@ -539,7 +552,7 @@
                 ) : (
                   <>
                     <td className="p-2 border border-gray-600">{prod.name}</td>
-                    <td className="p-2 border border-gray-600">${prod.price.toFixed(2)}</td>
+                    <td className="p-2 border border-gray-600">Rs.{prod.price.toFixed(2)}</td>
                     <td className="p-2 border border-gray-600">{prod.category}</td>
                     <td className="p-2 border border-gray-600">{prod.stock}</td>
                     <td className="p-2 border border-gray-600">{prod.rating}</td>

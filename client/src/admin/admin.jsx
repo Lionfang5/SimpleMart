@@ -171,7 +171,7 @@ const Admin = () => {
 				</div>
 				<div className={`p-4 rounded-lg shadow ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
 					<h2 className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Total Revenue</h2>
-					<p className={`text-2xl font-bold text-green-600`}>${totalRevenue.toFixed(2)}</p>
+					<p className={`text-2xl font-bold text-green-600`}>Rs.{totalRevenue.toFixed(2)}</p>
 				</div>
 			</div>
 

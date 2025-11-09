@@ -13,6 +13,17 @@ const CheckoutPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
+  // Nepal states/provinces
+  const nepalStates = [
+    'Province No. 1',
+    'Madhesh Province',
+    'Bagmati Province',
+    'Gandaki Province',
+    'Lumbini Province',
+    'Karnali Province',
+    'Sudurpashchim Province'
+  ];
+
   // Form data
   const [shippingData, setShippingData] = useState({
     firstName: '',
@@ -32,9 +43,14 @@ const CheckoutPage = () => {
     cvv: ''
   });
 
+  const [paymentMethod, setPaymentMethod] = useState('card'); // 'card' or 'cod'
+
+  // Validation states
+  const [validationErrors, setValidationErrors] = useState({});
+
   // Calculate totals
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const shipping = 5.99;
+  const shipping = 100;
   const tax = subtotal * 0.08;
   const total = subtotal + shipping + tax;
 
@@ -47,6 +63,133 @@ const CheckoutPage = () => {
       navigate('/Cart');
     }
   }, [cartItems, navigate]);
+
+  // Real-time validation functions
+  const validateField = (fieldName, value, isPayment = false) => {
+    const errors = { ...validationErrors };
+    
+    if (isPayment) {
+      switch (fieldName) {
+        case 'cardNumber':
+          if (!value.replace(/\s/g, '').match(/^\d{16}$/)) {
+            errors.cardNumber = 'Card number must be 16 digits';
+          } else {
+            delete errors.cardNumber;
+          }
+          break;
+        case 'cardName':
+          if (!value.trim() || value.trim().length < 2) {
+            errors.cardName = 'Cardholder name is required (minimum 2 characters)';
+          } else if (!/^[a-zA-Z\s]+$/.test(value)) {
+            errors.cardName = 'Cardholder name can only contain letters and spaces';
+          } else {
+            delete errors.cardName;
+          }
+          break;
+        case 'expiryDate':
+          if (!value.match(/^\d{2}\/\d{2}$/)) {
+            errors.expiryDate = 'Expiry date must be in MM/YY format';
+          } else {
+            const [month, year] = value.split('/');
+            const currentDate = new Date();
+            const currentYear = currentDate.getFullYear() % 100;
+            const currentMonth = currentDate.getMonth() + 1;
+            
+            if (parseInt(month) < 1 || parseInt(month) > 12) {
+              errors.expiryDate = 'Invalid month (01-12)';
+            } else if (parseInt(year) < currentYear || 
+                      (parseInt(year) === currentYear && parseInt(month) < currentMonth)) {
+              errors.expiryDate = 'Card has expired';
+            } else {
+              delete errors.expiryDate;
+            }
+          }
+          break;
+        case 'cvv':
+          if (!value.match(/^\d{3,4}$/)) {
+            errors.cvv = 'CVV must be 3 or 4 digits';
+          } else {
+            delete errors.cvv;
+          }
+          break;
+      }
+    } else {
+      switch (fieldName) {
+        case 'firstName':
+        case 'lastName':
+          if (!value.trim()) {
+            errors[fieldName] = `${fieldName === 'firstName' ? 'First' : 'Last'} name is required`;
+          } else if (value.trim().length < 2) {
+            errors[fieldName] = `${fieldName === 'firstName' ? 'First' : 'Last'} name must be at least 2 characters`;
+          } else if (!/^[a-zA-Z\s]+$/.test(value)) {
+            errors[fieldName] = 'Name can only contain letters and spaces';
+          } else {
+            delete errors[fieldName];
+          }
+          break;
+        case 'email':
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!value.trim()) {
+            errors.email = 'Email is required';
+          } else if (!emailRegex.test(value)) {
+            errors.email = 'Please enter a valid email address';
+          } else {
+            delete errors.email;
+          }
+          break;
+        case 'phone':
+          const cleanPhone = value.replace(/\D/g, '');
+          if (!cleanPhone) {
+            errors.phone = 'Phone number is required';
+          } else if (cleanPhone.length < 10) {
+            errors.phone = 'Phone number must be at least 10 digits';
+          } else if (cleanPhone.length > 15) {
+            errors.phone = 'Phone number cannot exceed 15 digits';
+          } else {
+            delete errors.phone;
+          }
+          break;
+        case 'address':
+          if (!value.trim()) {
+            errors.address = 'Address is required';
+          } else if (value.trim().length < 5) {
+            errors.address = 'Address must be at least 5 characters';
+          } else {
+            delete errors.address;
+          }
+          break;
+        case 'city':
+          if (!value.trim()) {
+            errors.city = 'City is required';
+          } else if (value.trim().length < 2) {
+            errors.city = 'City name must be at least 2 characters';
+          } else if (!/^[a-zA-Z\s]+$/.test(value)) {
+            errors.city = 'City name can only contain letters and spaces';
+          } else {
+            delete errors.city;
+          }
+          break;
+        case 'state':
+          if (!value.trim()) {
+            errors.state = 'State/Province is required';
+          } else {
+            delete errors.state;
+          }
+          break;
+        case 'zipCode':
+          if (!value.trim()) {
+            errors.zipCode = 'ZIP code is required';
+          } else if (!/^\d{5,6}$/.test(value)) {
+            errors.zipCode = 'ZIP code must be 5 or 6 digits';
+          } else {
+            delete errors.zipCode;
+          }
+          break;
+      }
+    }
+    
+    setValidationErrors(errors);
+  };
 
   const handleShippingSubmit = (e) => {
     e.preventDefault();
@@ -63,25 +206,16 @@ const CheckoutPage = () => {
   };
 
   const validateShippingData = () => {
-    const required = ['firstName', 'lastName', 'email', 'phone', 'address', 'city', 'state', 'zipCode'];
-    for (const field of required) {
-      if (!shippingData[field].trim()) {
-        setError(`Please fill in ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`);
-        return false;
-      }
-    }
+    const errors = {};
     
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(shippingData.email)) {
-      setError('Please enter a valid email address');
-      return false;
-    }
+    // Validate all fields
+    Object.keys(shippingData).forEach(field => {
+      validateField(field, shippingData[field], false);
+    });
     
-    // Phone validation
-    const phoneRegex = /^\d{10,}$/;
-    if (!phoneRegex.test(shippingData.phone.replace(/\D/g, ''))) {
-      setError('Please enter a valid phone number');
+    // Check if there are any validation errors
+    if (Object.keys(validationErrors).length > 0) {
+      setError('Please fix all validation errors before proceeding');
       return false;
     }
     
@@ -90,23 +224,20 @@ const CheckoutPage = () => {
   };
 
   const validatePaymentData = () => {
-    if (!paymentData.cardNumber.replace(/\s/g, '').match(/^\d{16}$/)) {
-      setError('Please enter a valid 16-digit card number');
-      return false;
+    // Skip validation for Cash on Delivery
+    if (paymentMethod === 'cod') {
+      setError('');
+      return true;
     }
+
+    // Validate all payment fields for card payment
+    Object.keys(paymentData).forEach(field => {
+      validateField(field, paymentData[field], true);
+    });
     
-    if (!paymentData.cardName.trim()) {
-      setError('Please enter the cardholder name');
-      return false;
-    }
-    
-    if (!paymentData.expiryDate.match(/^\d{2}\/\d{2}$/)) {
-      setError('Please enter expiry date in MM/YY format');
-      return false;
-    }
-    
-    if (!paymentData.cvv.match(/^\d{3,4}$/)) {
-      setError('Please enter a valid CVV');
+    // Check if there are any validation errors
+    if (Object.keys(validationErrors).length > 0) {
+      setError('Please fix all validation errors before proceeding');
       return false;
     }
     
@@ -130,7 +261,7 @@ const CheckoutPage = () => {
         })),
         totalAmount: total,
         shippingAddress: shippingData,
-        paymentInfo: paymentData
+        paymentInfo: paymentMethod === 'cod' ? { method: 'cod' } : paymentData
       };
 
       const response = await authFetch('http://localhost:5000/orders', {
@@ -181,11 +312,35 @@ const CheckoutPage = () => {
   };
 
   const formatExpiryDate = (value) => {
+    // Allow complete deletion
+    if (value === '') return '';
+    
     const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-    if (v.length >= 2) {
+    
+    // Allow deletion by checking if we're reducing the length
+    if (v.length === 0) return '';
+    if (v.length === 1) return v;
+    if (v.length === 2) return v;
+    if (v.length >= 3) {
       return v.substring(0, 2) + '/' + v.substring(2, 4);
     }
+    
     return v;
+  };
+
+  const formatPhoneNumber = (value) => {
+    // Allow only numbers and some common phone formatting characters
+    return value.replace(/[^\d\s\-\+\(\)]/g, '');
+  };
+
+  const formatZipCode = (value) => {
+    // Allow only numbers for ZIP code
+    return value.replace(/[^\d]/g, '');
+  };
+
+  const formatNameField = (value) => {
+    // Allow only letters and spaces for name fields
+    return value.replace(/[^a-zA-Z\s]/g, '');
   };
 
   const steps = [
@@ -263,13 +418,21 @@ const CheckoutPage = () => {
                         type="text"
                         required
                         value={shippingData.firstName}
-                        onChange={(e) => setShippingData(prev => ({ ...prev, firstName: e.target.value }))}
+                        onChange={(e) => {
+                          const value = formatNameField(e.target.value);
+                          setShippingData(prev => ({ ...prev, firstName: value }));
+                          validateField('firstName', value);
+                        }}
                         className={`w-full p-3 rounded-lg border ${
+                          validationErrors.firstName ? 'border-red-500' : 
                           isDark 
                             ? 'bg-gray-700 border-gray-600 text-gray-200' 
                             : 'bg-white border-gray-300 text-gray-800'
                         }`}
                       />
+                      {validationErrors.firstName && (
+                        <p className="text-red-500 text-sm mt-1">{validationErrors.firstName}</p>
+                      )}
                     </div>
                     <div>
                       <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -279,13 +442,21 @@ const CheckoutPage = () => {
                         type="text"
                         required
                         value={shippingData.lastName}
-                        onChange={(e) => setShippingData(prev => ({ ...prev, lastName: e.target.value }))}
+                        onChange={(e) => {
+                          const value = formatNameField(e.target.value);
+                          setShippingData(prev => ({ ...prev, lastName: value }));
+                          validateField('lastName', value);
+                        }}
                         className={`w-full p-3 rounded-lg border ${
+                          validationErrors.lastName ? 'border-red-500' : 
                           isDark 
                             ? 'bg-gray-700 border-gray-600 text-gray-200' 
                             : 'bg-white border-gray-300 text-gray-800'
                         }`}
                       />
+                      {validationErrors.lastName && (
+                        <p className="text-red-500 text-sm mt-1">{validationErrors.lastName}</p>
+                      )}
                     </div>
                   </div>
 
@@ -298,13 +469,20 @@ const CheckoutPage = () => {
                         type="email"
                         required
                         value={shippingData.email}
-                        onChange={(e) => setShippingData(prev => ({ ...prev, email: e.target.value }))}
+                        onChange={(e) => {
+                          setShippingData(prev => ({ ...prev, email: e.target.value }));
+                          validateField('email', e.target.value);
+                        }}
                         className={`w-full p-3 rounded-lg border ${
+                          validationErrors.email ? 'border-red-500' : 
                           isDark 
                             ? 'bg-gray-700 border-gray-600 text-gray-200' 
                             : 'bg-white border-gray-300 text-gray-800'
                         }`}
                       />
+                      {validationErrors.email && (
+                        <p className="text-red-500 text-sm mt-1">{validationErrors.email}</p>
+                      )}
                     </div>
                     <div>
                       <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -314,13 +492,22 @@ const CheckoutPage = () => {
                         type="tel"
                         required
                         value={shippingData.phone}
-                        onChange={(e) => setShippingData(prev => ({ ...prev, phone: e.target.value }))}
+                        onChange={(e) => {
+                          const value = formatPhoneNumber(e.target.value);
+                          setShippingData(prev => ({ ...prev, phone: value }));
+                          validateField('phone', value);
+                        }}
+                        placeholder="+977-1-1234567 or 9841234567"
                         className={`w-full p-3 rounded-lg border ${
+                          validationErrors.phone ? 'border-red-500' : 
                           isDark 
                             ? 'bg-gray-700 border-gray-600 text-gray-200' 
                             : 'bg-white border-gray-300 text-gray-800'
                         }`}
                       />
+                      {validationErrors.phone && (
+                        <p className="text-red-500 text-sm mt-1">{validationErrors.phone}</p>
+                      )}
                     </div>
                   </div>
 
@@ -332,13 +519,21 @@ const CheckoutPage = () => {
                       type="text"
                       required
                       value={shippingData.address}
-                      onChange={(e) => setShippingData(prev => ({ ...prev, address: e.target.value }))}
+                      onChange={(e) => {
+                        setShippingData(prev => ({ ...prev, address: e.target.value }));
+                        validateField('address', e.target.value);
+                      }}
+                      placeholder="Street address, apartment, suite, etc."
                       className={`w-full p-3 rounded-lg border ${
+                        validationErrors.address ? 'border-red-500' : 
                         isDark 
                           ? 'bg-gray-700 border-gray-600 text-gray-200' 
                           : 'bg-white border-gray-300 text-gray-800'
                       }`}
                     />
+                    {validationErrors.address && (
+                      <p className="text-red-500 text-sm mt-1">{validationErrors.address}</p>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -350,29 +545,49 @@ const CheckoutPage = () => {
                         type="text"
                         required
                         value={shippingData.city}
-                        onChange={(e) => setShippingData(prev => ({ ...prev, city: e.target.value }))}
+                        onChange={(e) => {
+                          const value = formatNameField(e.target.value);
+                          setShippingData(prev => ({ ...prev, city: value }));
+                          validateField('city', value);
+                        }}
+                        placeholder="Kathmandu"
                         className={`w-full p-3 rounded-lg border ${
+                          validationErrors.city ? 'border-red-500' : 
                           isDark 
                             ? 'bg-gray-700 border-gray-600 text-gray-200' 
                             : 'bg-white border-gray-300 text-gray-800'
                         }`}
                       />
+                      {validationErrors.city && (
+                        <p className="text-red-500 text-sm mt-1">{validationErrors.city}</p>
+                      )}
                     </div>
                     <div>
                       <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                        State *
+                        State/Province *
                       </label>
-                      <input
-                        type="text"
+                      <select
                         required
                         value={shippingData.state}
-                        onChange={(e) => setShippingData(prev => ({ ...prev, state: e.target.value }))}
+                        onChange={(e) => {
+                          setShippingData(prev => ({ ...prev, state: e.target.value }));
+                          validateField('state', e.target.value);
+                        }}
                         className={`w-full p-3 rounded-lg border ${
+                          validationErrors.state ? 'border-red-500' : 
                           isDark 
                             ? 'bg-gray-700 border-gray-600 text-gray-200' 
                             : 'bg-white border-gray-300 text-gray-800'
                         }`}
-                      />
+                      >
+                        <option value="">Select Province</option>
+                        {nepalStates.map((state) => (
+                          <option key={state} value={state}>{state}</option>
+                        ))}
+                      </select>
+                      {validationErrors.state && (
+                        <p className="text-red-500 text-sm mt-1">{validationErrors.state}</p>
+                      )}
                     </div>
                     <div>
                       <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -382,13 +597,23 @@ const CheckoutPage = () => {
                         type="text"
                         required
                         value={shippingData.zipCode}
-                        onChange={(e) => setShippingData(prev => ({ ...prev, zipCode: e.target.value }))}
+                        onChange={(e) => {
+                          const value = formatZipCode(e.target.value);
+                          setShippingData(prev => ({ ...prev, zipCode: value }));
+                          validateField('zipCode', value);
+                        }}
+                        placeholder="44600"
+                        maxLength={6}
                         className={`w-full p-3 rounded-lg border ${
+                          validationErrors.zipCode ? 'border-red-500' : 
                           isDark 
                             ? 'bg-gray-700 border-gray-600 text-gray-200' 
                             : 'bg-white border-gray-300 text-gray-800'
                         }`}
                       />
+                      {validationErrors.zipCode && (
+                        <p className="text-red-500 text-sm mt-1">{validationErrors.zipCode}</p>
+                      )}
                     </div>
                   </div>
 
@@ -408,87 +633,252 @@ const CheckoutPage = () => {
                 <h2 className={`text-xl font-semibold mb-6 ${isDark ? 'text-white' : 'text-gray-800'}`}>
                   💳 Payment Information
                 </h2>
+                
+                {/* Payment Method Selection */}
+                <div className="mb-6">
+                  <label className={`block text-sm font-medium mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Select Payment Method *
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div 
+                      onClick={() => {
+                        setPaymentMethod('card');
+                        // Clear any payment validation errors when switching methods
+                        const newErrors = { ...validationErrors };
+                        ['cardNumber', 'cardName', 'expiryDate', 'cvv'].forEach(field => {
+                          delete newErrors[field];
+                        });
+                        setValidationErrors(newErrors);
+                        setError('');
+                      }}
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        paymentMethod === 'card'
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                          : isDark
+                            ? 'border-gray-600 bg-gray-700 hover:border-gray-500'
+                            : 'border-gray-300 bg-white hover:border-gray-400'
+                      }`}
+                    >
+                      <div className="flex items-center">
+                        <div className={`w-4 h-4 rounded-full border-2 mr-3 ${
+                          paymentMethod === 'card' 
+                            ? 'border-blue-500 bg-blue-500' 
+                            : isDark ? 'border-gray-500' : 'border-gray-300'
+                        }`}>
+                          {paymentMethod === 'card' && (
+                            <div className="w-2 h-2 bg-white rounded-full mx-auto mt-0.5"></div>
+                          )}
+                        </div>
+                        <div>
+                          <p className={`font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                            💳 Credit/Debit Card
+                          </p>
+                          <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                            Pay with your card securely
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div 
+                      onClick={() => {
+                        setPaymentMethod('cod');
+                        // Clear all payment validation errors when switching to COD
+                        const newErrors = { ...validationErrors };
+                        ['cardNumber', 'cardName', 'expiryDate', 'cvv'].forEach(field => {
+                          delete newErrors[field];
+                        });
+                        setValidationErrors(newErrors);
+                        setError('');
+                      }}
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        paymentMethod === 'cod'
+                          ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                          : isDark
+                            ? 'border-gray-600 bg-gray-700 hover:border-gray-500'
+                            : 'border-gray-300 bg-white hover:border-gray-400'
+                      }`}
+                    >
+                      <div className="flex items-center">
+                        <div className={`w-4 h-4 rounded-full border-2 mr-3 ${
+                          paymentMethod === 'cod' 
+                            ? 'border-green-500 bg-green-500' 
+                            : isDark ? 'border-gray-500' : 'border-gray-300'
+                        }`}>
+                          {paymentMethod === 'cod' && (
+                            <div className="w-2 h-2 bg-white rounded-full mx-auto mt-0.5"></div>
+                          )}
+                        </div>
+                        <div>
+                          <p className={`font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                            🚚 Cash on Delivery
+                          </p>
+                          <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                            Pay when you receive your order
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <form onSubmit={handlePaymentSubmit} className="space-y-4">
-                  <div>
-                    <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                      Card Number *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="1234 5678 9012 3456"
-                      value={paymentData.cardNumber}
-                      onChange={(e) => setPaymentData(prev => ({ ...prev, cardNumber: formatCardNumber(e.target.value) }))}
-                      maxLength={19}
-                      className={`w-full p-3 rounded-lg border ${
-                        isDark 
-                          ? 'bg-gray-700 border-gray-600 text-gray-200' 
-                          : 'bg-white border-gray-300 text-gray-800'
-                      }`}
-                    />
-                  </div>
+                  {/* Card Payment Fields - Only show when card is selected */}
+                  {paymentMethod === 'card' && (
+                    <>
+                      <div>
+                        <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                          Card Number *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="1234 5678 9012 3456"
+                          value={paymentData.cardNumber}
+                          onChange={(e) => {
+                            const value = formatCardNumber(e.target.value);
+                            setPaymentData(prev => ({ ...prev, cardNumber: value }));
+                            validateField('cardNumber', value, true);
+                          }}
+                          maxLength={19}
+                          className={`w-full p-3 rounded-lg border ${
+                            validationErrors.cardNumber ? 'border-red-500' : 
+                            isDark 
+                              ? 'bg-gray-700 border-gray-600 text-gray-200' 
+                              : 'bg-white border-gray-300 text-gray-800'
+                          }`}
+                        />
+                        {validationErrors.cardNumber && (
+                          <p className="text-red-500 text-sm mt-1">{validationErrors.cardNumber}</p>
+                        )}
+                      </div>
 
-                  <div>
-                    <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                      Cardholder Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="John Doe"
-                      value={paymentData.cardName}
-                      onChange={(e) => setPaymentData(prev => ({ ...prev, cardName: e.target.value }))}
-                      className={`w-full p-3 rounded-lg border ${
-                        isDark 
-                          ? 'bg-gray-700 border-gray-600 text-gray-200' 
-                          : 'bg-white border-gray-300 text-gray-800'
-                      }`}
-                    />
-                  </div>
+                      <div>
+                        <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                          Cardholder Name *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="John Doe"
+                          value={paymentData.cardName}
+                          onChange={(e) => {
+                            const value = formatNameField(e.target.value);
+                            setPaymentData(prev => ({ ...prev, cardName: value }));
+                            validateField('cardName', value, true);
+                          }}
+                          className={`w-full p-3 rounded-lg border ${
+                            validationErrors.cardName ? 'border-red-500' : 
+                            isDark 
+                              ? 'bg-gray-700 border-gray-600 text-gray-200' 
+                              : 'bg-white border-gray-300 text-gray-800'
+                          }`}
+                        />
+                        {validationErrors.cardName && (
+                          <p className="text-red-500 text-sm mt-1">{validationErrors.cardName}</p>
+                        )}
+                      </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                        Expiry Date *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="MM/YY"
-                        value={paymentData.expiryDate}
-                        onChange={(e) => setPaymentData(prev => ({ ...prev, expiryDate: formatExpiryDate(e.target.value) }))}
-                        maxLength={5}
-                        className={`w-full p-3 rounded-lg border ${
-                          isDark 
-                            ? 'bg-gray-700 border-gray-600 text-gray-200' 
-                            : 'bg-white border-gray-300 text-gray-800'
-                        }`}
-                      />
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                            Expiry Date *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="MM/YY"
+                            value={paymentData.expiryDate}
+                            onChange={(e) => {
+                              const value = formatExpiryDate(e.target.value);
+                              setPaymentData(prev => ({ ...prev, expiryDate: value }));
+                              validateField('expiryDate', value, true);
+                            }}
+                            onKeyDown={(e) => {
+                              // Allow backspace to delete the slash and previous characters
+                              if (e.key === 'Backspace' && paymentData.expiryDate.includes('/')) {
+                                const currentValue = e.target.value;
+                                if (currentValue.endsWith('/')) {
+                                  e.preventDefault();
+                                  const newValue = currentValue.slice(0, -1);
+                                  setPaymentData(prev => ({ ...prev, expiryDate: newValue }));
+                                  validateField('expiryDate', newValue, true);
+                                }
+                              }
+                            }}
+                            maxLength={5}
+                            className={`w-full p-3 rounded-lg border ${
+                              validationErrors.expiryDate ? 'border-red-500' : 
+                              isDark 
+                                ? 'bg-gray-700 border-gray-600 text-gray-200' 
+                                : 'bg-white border-gray-300 text-gray-800'
+                            }`}
+                          />
+                          {validationErrors.expiryDate && (
+                            <p className="text-red-500 text-sm mt-1">{validationErrors.expiryDate}</p>
+                          )}
+                        </div>
+                        <div>
+                          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                            CVV *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="123"
+                            value={paymentData.cvv}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                              setPaymentData(prev => ({ ...prev, cvv: value }));
+                              validateField('cvv', value, true);
+                            }}
+                            maxLength={4}
+                            className={`w-full p-3 rounded-lg border ${
+                              validationErrors.cvv ? 'border-red-500' : 
+                              isDark 
+                                ? 'bg-gray-700 border-gray-600 text-gray-200' 
+                                : 'bg-white border-gray-300 text-gray-800'
+                            }`}
+                          />
+                          {validationErrors.cvv && (
+                            <p className="text-red-500 text-sm mt-1">{validationErrors.cvv}</p>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Cash on Delivery Information */}
+                  {paymentMethod === 'cod' && (
+                    <div className={`p-4 rounded-lg border ${isDark ? 'border-green-700 bg-green-900/20' : 'border-green-200 bg-green-50'}`}>
+                      <div className="flex items-start space-x-3">
+                        <div className="text-2xl">🚚</div>
+                        <div>
+                          <h3 className={`font-medium ${isDark ? 'text-green-300' : 'text-green-800'}`}>
+                            Cash on Delivery Selected
+                          </h3>
+                          <p className={`text-sm mt-1 ${isDark ? 'text-green-400' : 'text-green-700'}`}>
+                            You will pay in cash when your order is delivered to your address.
+                          </p>
+                          <ul className={`text-sm mt-2 space-y-1 ${isDark ? 'text-green-400' : 'text-green-700'}`}>
+                            <li>• Please keep the exact amount ready</li>
+                            <li>• Our delivery partner will collect the payment</li>
+                            <li>• You can inspect your order before payment</li>
+                          </ul>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                        CVV *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="123"
-                        value={paymentData.cvv}
-                        onChange={(e) => setPaymentData(prev => ({ ...prev, cvv: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
-                        maxLength={4}
-                        className={`w-full p-3 rounded-lg border ${
-                          isDark 
-                            ? 'bg-gray-700 border-gray-600 text-gray-200' 
-                            : 'bg-white border-gray-300 text-gray-800'
-                        }`}
-                      />
-                    </div>
-                  </div>
+                  )}
 
                   <div className="flex space-x-4">
                     <button
                       type="button"
-                      onClick={() => setCurrentStep(1)}
+                      onClick={() => {
+                        // Clear all validation errors when going back
+                        setValidationErrors({});
+                        setError('');
+                        setCurrentStep(1);
+                      }}
                       className={`flex-1 py-3 px-6 rounded-lg font-medium border transition-colors ${
                         isDark 
                           ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
@@ -548,15 +938,28 @@ const CheckoutPage = () => {
                     Payment Information
                   </h3>
                   <div className="space-y-1 text-sm">
-                    <p className={isDark ? 'text-gray-300' : 'text-gray-700'}>
-                      Card ending in {paymentData.cardNumber.slice(-4)}
-                    </p>
-                    <p className={isDark ? 'text-gray-300' : 'text-gray-700'}>
-                      {paymentData.cardName}
-                    </p>
-                    <p className={isDark ? 'text-gray-300' : 'text-gray-700'}>
-                      Expires {paymentData.expiryDate}
-                    </p>
+                    {paymentMethod === 'card' ? (
+                      <>
+                        <p className={isDark ? 'text-gray-300' : 'text-gray-700'}>
+                          💳 Card ending in {paymentData.cardNumber.slice(-4)}
+                        </p>
+                        <p className={isDark ? 'text-gray-300' : 'text-gray-700'}>
+                          {paymentData.cardName}
+                        </p>
+                        <p className={isDark ? 'text-gray-300' : 'text-gray-700'}>
+                          Expires {paymentData.expiryDate}
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className={isDark ? 'text-gray-300' : 'text-gray-700'}>
+                          🚚 Cash on Delivery
+                        </p>
+                        <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                          Payment will be collected upon delivery
+                        </p>
+                      </>
+                    )}
                   </div>
                   <button
                     onClick={() => setCurrentStep(2)}
@@ -583,7 +986,7 @@ const CheckoutPage = () => {
                           </p>
                         </div>
                         <p className={`font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
-                          ${(item.price * item.quantity).toFixed(2)}
+                          Rs.{(item.price * item.quantity).toFixed(2)}
                         </p>
                       </div>
                     ))}
@@ -634,7 +1037,7 @@ const CheckoutPage = () => {
                       </p>
                     </div>
                     <p className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
-                      ${(item.price * item.quantity).toFixed(2)}
+                      Rs.{(item.price * item.quantity).toFixed(2)}
                     </p>
                   </div>
                 ))}
@@ -649,24 +1052,24 @@ const CheckoutPage = () => {
                 <div className="flex justify-between">
                   <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Subtotal:</span>
                   <span className={`font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
-                    ${subtotal.toFixed(2)}
+                    Rs.{subtotal.toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Shipping:</span>
                   <span className={`font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
-                    ${shipping.toFixed(2)}
+                    Rs.{shipping.toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Tax:</span>
                   <span className={`font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
-                    ${tax.toFixed(2)}
+                    Rs.{tax.toFixed(2)}
                   </span>
                 </div>
                 <div className={`flex justify-between text-lg font-bold pt-2 border-t ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
                   <span className={isDark ? 'text-gray-200' : 'text-gray-800'}>Total:</span>
-                  <span className="text-green-600">${total.toFixed(2)}</span>
+                  <span className="text-green-600">Rs.{total.toFixed(2)}</span>
                 </div>
               </div>
 

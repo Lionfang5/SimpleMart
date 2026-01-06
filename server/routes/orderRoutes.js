@@ -1,4 +1,4 @@
-// server/routes/orderRoutes.js - UPDATED WITH COD SUPPORT
+// server/routes/orderRoutes.js - ENHANCED VERSION
 
 import express from "express";
 import Order from "../model/Order.js";
@@ -8,23 +8,12 @@ import auth from "../middleware/auth.js";
 
 const router = express.Router();
 
-// Updated payment processing with COD support
+// Simulate payment processing (replace with real payment gateway)
 const simulatePaymentProcessing = async (paymentInfo, totalAmount) => {
-  // Check if it's Cash on Delivery
-  if (paymentInfo.method === 'cod') {
-    console.log('💰 Cash on Delivery selected - no payment processing needed');
-    return {
-      success: true,
-      method: 'cod',
-      transactionId: `COD_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      processingFee: 0, // No processing fee for COD
-    };
-  }
-
-  // For card payments, simulate payment delay
+  // Simulate payment delay
   await new Promise(resolve => setTimeout(resolve, 1000));
   
-  // Validate card payment information
+  // Simple validation (replace with real payment validation)
   if (!paymentInfo.cardNumber || !paymentInfo.cardName || !paymentInfo.expiryDate || !paymentInfo.cvv) {
     throw new Error("Invalid payment information");
   }
@@ -36,7 +25,6 @@ const simulatePaymentProcessing = async (paymentInfo, totalAmount) => {
   
   return {
     success: true,
-    method: 'card',
     transactionId: `TXN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     processingFee: totalAmount * 0.029, // 2.9% processing fee
   };
@@ -169,7 +157,7 @@ router.get("/my-orders", auth, async (req, res) => {
   }
 });
 
-// POST create new order - UPDATED WITH COD SUPPORT
+// POST create new order - ENHANCED WITH PAYMENT PROCESSING
 router.post("/", auth, async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -196,7 +184,7 @@ router.post("/", auth, async (req, res) => {
       }
     }
 
-    console.log(`🛒 Processing order for user ${userId}, Amount: $${totalAmount}, Payment Method: ${paymentInfo.method || 'card'}`);
+    console.log(`🛒 Processing order for user ${userId}, Amount: $${totalAmount}`);
 
     // Step 1: Check product availability and stock
     for (const item of items) {
@@ -211,15 +199,11 @@ router.post("/", auth, async (req, res) => {
       }
     }
 
-    // Step 2: Process payment (or skip for COD)
+    // Step 2: Process payment
     let paymentResult;
     try {
       paymentResult = await simulatePaymentProcessing(paymentInfo, totalAmount);
-      if (paymentResult.method === 'cod') {
-        console.log(`💰 COD Order confirmed: ${paymentResult.transactionId}`);
-      } else {
-        console.log(`💳 Payment processed successfully: ${paymentResult.transactionId}`);
-      }
+      console.log(`💳 Payment processed successfully: ${paymentResult.transactionId}`);
     } catch (paymentError) {
       console.error(`❌ Payment failed:`, paymentError.message);
       return res.status(400).json({ 
@@ -235,15 +219,9 @@ router.post("/", auth, async (req, res) => {
       totalAmount,
       shippingAddress,
       paymentInfo: {
-        method: paymentResult.method,
+        ...paymentInfo,
         transactionId: paymentResult.transactionId,
-        processingFee: paymentResult.processingFee,
-        // Only include card details if it's a card payment
-        ...(paymentResult.method === 'card' && {
-          cardNumber: paymentInfo.cardNumber,
-          cardName: paymentInfo.cardName,
-          expiryDate: paymentInfo.expiryDate
-        })
+        processingFee: paymentResult.processingFee
       },
       status: "pending",
       orderDate: new Date()
@@ -284,7 +262,6 @@ router.post("/", auth, async (req, res) => {
       message: "Order created successfully",
       order: newOrder,
       paymentInfo: {
-        method: paymentResult.method,
         transactionId: paymentResult.transactionId,
         processingFee: paymentResult.processingFee
       }

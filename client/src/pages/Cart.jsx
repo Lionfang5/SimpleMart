@@ -401,7 +401,7 @@ const Cart = () => {
                 )}
                 
                 <div className="text-xs text-gray-500 mt-2">
-                  Try: SAVE10
+                  Try: SAVE10, WELCOME20, FREESHIP, NEWUSER
                 </div>
               </div>
               

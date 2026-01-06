@@ -2,7 +2,6 @@ import { useEffect, useState, useContext } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { CartContext } from '../contexts/CartContext';
-import { authFetch } from '../utils/authFetch';
 import FrequentlyBoughtTogether from '../components/FrequentlyBoughtTogether';
 
 const ProductDetail = () => {
@@ -166,92 +165,30 @@ const ProductDetail = () => {
         {/* Product Details Section */}
         <div className="flex flex-col md:flex-row gap-8 items-start mb-12">
           {/* Product Image */}
-          <div className="w-full md:w-1/2 relative">
+          <div className="w-full md:w-1/2">
             <img
               src={`http://localhost:5000/images/${product.image}`}
               alt={product.name}
               className="rounded-xl shadow-lg object-cover w-full max-h-[500px]"
             />
-            
-            {/* Wishlist Heart Button */}
-            {user && (
-              <button
-                onClick={isInWishlist ? handleRemoveFromWishlist : handleAddToWishlist}
-                className="absolute top-4 right-4 p-3 rounded-full bg-white shadow-lg transition-all hover:scale-110"
-                title={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
-              >
-                <svg
-                  className={`w-6 h-6 ${
-                    isInWishlist 
-                      ? "text-red-500 fill-current" 
-                      : "text-gray-500 hover:text-red-500"
-                  }`}
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                  />
-                </svg>
-              </button>
-            )}
           </div>
 
           {/* Product Info */}
           <div className="w-full md:w-1/2">
             <h1 className="text-3xl font-bold mb-4">{product.name}</h1>
             <p className="text-lg mb-2"><span className="font-semibold">Price:</span> Rs.{product.price}</p>
-            <p className="text-lg mb-4"><span className="font-semibold">Category:</span> {product.category}</p>
+            <p className="text-lg mb-2"><span className="font-semibold">Category:</span> {product.category}</p>
+            <p className="text-lg mb-2"><span className="font-semibold">Expiration Date:</span> {new Date(product.expirationDate).toLocaleDateString()}</p>
+            <p className="text-lg mb-2"><span className="font-semibold">Rating:</span> {product.rating} / 5</p>
             <p className="text-lg mt-4"><span className="font-semibold">Description:</span><br />{product.description || 'No description available.'}</p>
 
-            {/* Action Buttons */}
-            <div className="flex gap-4 mt-6">
-              {/* Add to Cart Button */}
-              <button
-                onClick={handleAddToCart}
-                className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 transition-colors font-medium"
-              >
-                🛒 Add to Cart
-              </button>
-
-              {/* Wishlist Button (for mobile/smaller screens) */}
-              {user && (
-                <button
-                  onClick={isInWishlist ? handleRemoveFromWishlist : handleAddToWishlist}
-                  className={`px-4 py-3 rounded-lg shadow-md transition-colors font-medium border-2 ${
-                    isInWishlist
-                      ? 'bg-red-50 border-red-500 text-red-600 hover:bg-red-100'
-                      : isDark 
-                        ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600' 
-                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
-                  title={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
-                >
-                  <svg
-                    className={`w-5 h-5 ${isInWishlist ? "fill-current" : ""}`}
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                    />
-                  </svg>
-                </button>
-              )}
-            </div>
-
-            {/* Login prompt for wishlist */}
-            {!user && (
-              <p className={`text-sm mt-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Please log in to add items to your wishlist
-              </p>
-            )}
+            {/* ✅ Add to Cart Button */}
+            <button
+              onClick={handleAddToCart}
+              className="mt-6 px-6 py-3 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 transition-colors"
+            >
+              🛒 Add to Cart
+            </button>
 
             {/* AI Badge */}
             <div className={`mt-4 p-3 rounded-lg ${isDark ? 'bg-purple-900 border border-purple-700' : 'bg-purple-50 border border-purple-200'}`}>
@@ -271,7 +208,7 @@ const ProductDetail = () => {
           currentProduct={product}
         />
 
-        {/* Comment Section */}
+        {/* ✅ Comment Section */}
         <div className="mt-12">
           <h2 className="text-2xl font-bold mb-4">💬 Comments</h2>
 
@@ -304,7 +241,7 @@ const ProductDetail = () => {
             ))}
           </ul>
 
-          {/* Comment Input */}
+          {/* ✅ Comment Input */}
           <div className={`border rounded-lg p-4 ${isDark ? 'border-gray-600 bg-gray-800' : 'border-gray-300 bg-white'}`}>
             <textarea
               className={`w-full p-3 border rounded-md resize-none ${

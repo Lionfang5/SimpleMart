@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { CartContext } from '../contexts/CartContext';
 import FrequentlyBoughtTogether from '../components/FrequentlyBoughtTogether';
+import { authFetch } from '../utils/authFetch';
 
 const ProductDetail = () => {
   const { id } = useParams();
